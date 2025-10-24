@@ -1,91 +1,143 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { IconSymbol } from '@/components/IconSymbol';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '@/styles/commonStyles';
+import { useDictionary } from '@/contexts/DictionaryContext';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
+  const { dictionaries } = useDictionary();
+  
+  const totalWords = dictionaries.reduce((sum, dict) => sum + dict.words.length, 0);
+  const totalDictionaries = dictionaries.length;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
-      >
-        <GlassView style={[
-          styles.profileHeader,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <IconSymbol name="person.circle.fill" size={80} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.avatarContainer}>
+            <IconSymbol name="person.fill" size={48} color={colors.primary} />
+          </View>
+          <Text style={styles.title}>Your Progress</Text>
+        </View>
 
-        <GlassView style={[
-          styles.section,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <View style={styles.infoRow}>
-            <IconSymbol name="phone.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <IconSymbol name="book.fill" size={32} color={colors.primary} />
+            <Text style={styles.statNumber}>{totalDictionaries}</Text>
+            <Text style={styles.statLabel}>Dictionaries</Text>
           </View>
-          <View style={styles.infoRow}>
-            <IconSymbol name="location.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+
+          <View style={styles.statCard}>
+            <IconSymbol name="text.book.closed.fill" size={32} color={colors.accent} />
+            <Text style={styles.statNumber}>{totalWords}</Text>
+            <Text style={styles.statLabel}>Total Words</Text>
           </View>
-        </GlassView>
+        </View>
+
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>About This App</Text>
+          <Text style={styles.infoText}>
+            Interactive Dictionary helps you learn new vocabulary through organized dictionaries and interactive tests.
+          </Text>
+          <Text style={styles.infoText}>
+            Features:
+          </Text>
+          <Text style={styles.infoText}>
+            - Create multiple dictionaries
+          </Text>
+          <Text style={styles.infoText}>
+            - Add words with translations
+          </Text>
+          <Text style={styles.infoText}>
+            - Auto-translate using LibreTranslate API
+          </Text>
+          <Text style={styles.infoText}>
+            - Text-to-speech pronunciation
+          </Text>
+          <Text style={styles.infoText}>
+            - Interactive testing mode
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    // backgroundColor handled dynamically
-  },
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  contentContainer: {
+  scrollView: {
+    flex: 1,
+  },
+  content: {
     padding: 20,
   },
-  contentContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
-  },
-  profileHeader: {
+  header: {
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 32,
+    marginBottom: 32,
+  },
+  avatarContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
-    gap: 12,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+    elevation: 4,
   },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    // color handled dynamically
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
   },
-  email: {
-    fontSize: 16,
-    // color handled dynamically
-  },
-  section: {
-    borderRadius: 12,
-    padding: 20,
-    gap: 12,
-  },
-  infoRow: {
+  statsContainer: {
     flexDirection: 'row',
+    gap: 16,
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
-    gap: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 3,
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 8,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  infoCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 3,
+  },
+  infoTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
   },
   infoText: {
     fontSize: 16,
-    // color handled dynamically
+    color: colors.textSecondary,
+    lineHeight: 24,
+    marginBottom: 8,
   },
 });
