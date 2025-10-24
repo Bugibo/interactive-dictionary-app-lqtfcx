@@ -41,7 +41,7 @@ export default function DictionariesScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Dictionaries',
+          title: 'My Dictionaries',
           headerRight: () => (
             <TouchableOpacity
               onPress={() => setModalVisible(true)}
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 16 : 100,
+    paddingBottom: 32,
   },
   emptyContainer: {
     flex: 1,

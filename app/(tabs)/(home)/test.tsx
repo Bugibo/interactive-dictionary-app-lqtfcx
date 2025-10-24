@@ -27,7 +27,7 @@ export default function TestScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [showError, setShowError] = useState(false);
   
   const shakeAnimation = useRef(new RNAnimated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
@@ -87,13 +87,11 @@ export default function TestScreen() {
 
     if (isAnswerCorrect) {
       // Correct answer
-      setIsCorrect(true);
       setShowSuccess(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       setTimeout(() => {
         setShowSuccess(false);
-        setIsCorrect(false);
         setAnswer('');
         
         if (currentIndex < testWords.length - 1) {
@@ -109,9 +107,15 @@ export default function TestScreen() {
       }, 800);
     } else {
       // Incorrect answer
+      setShowError(true);
       shake();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setAnswer('');
+      
+      setTimeout(() => {
+        setShowError(false);
+      }, 1000);
+      
       inputRef.current?.focus();
     }
   };
@@ -180,12 +184,13 @@ export default function TestScreen() {
         <RNAnimated.View
           style={[
             styles.inputContainer,
+            showError && styles.inputContainerError,
             { transform: [{ translateX: shakeAnimation }] },
           ]}
         >
           <TextInput
             ref={inputRef}
-            style={styles.input}
+            style={[styles.input, showError && styles.inputError]}
             placeholder="Type your answer"
             placeholderTextColor={colors.textSecondary}
             value={answer}
@@ -204,7 +209,7 @@ export default function TestScreen() {
           onPress={checkAnswer}
           disabled={!answer.trim()}
         >
-          <Text style={styles.submitButtonText}>Check Answer</Text>
+          <Text style={styles.submitButtonText}>OK</Text>
         </TouchableOpacity>
 
         {showSuccess && (
@@ -279,6 +284,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 24,
   },
+  inputContainerError: {
+    // Container for error state
+  },
   input: {
     backgroundColor: colors.card,
     borderWidth: 2,
@@ -287,6 +295,10 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 18,
     color: colors.text,
+  },
+  inputError: {
+    borderColor: colors.error,
+    backgroundColor: '#FFEBEE',
   },
   submitButton: {
     backgroundColor: colors.primary,

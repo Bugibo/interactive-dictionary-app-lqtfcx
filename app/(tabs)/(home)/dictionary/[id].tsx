@@ -14,7 +14,8 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { useDictionary } from '@/contexts/DictionaryContext';
 import { Word } from '@/types/dictionary';
-import WordRow from '@/components/WordRow';
+import DraggableWordRow from '@/components/DraggableWordRow';
+import WordSelectionModal from '@/components/WordSelectionModal';
 import { useIsOnline } from '@/utils/translation';
 import * as Haptics from 'expo-haptics';
 
@@ -26,8 +27,7 @@ export default function DictionaryScreen() {
   const isOnline = useIsOnline();
   
   const [words, setWords] = useState<Word[]>(dictionary?.words || []);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  const [selectionModalVisible, setSelectionModalVisible] = useState(false);
 
   useEffect(() => {
     if (dictionary) {
@@ -57,6 +57,11 @@ export default function DictionaryScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const handleReorderWords = (newWords: Word[]) => {
+    setWords(newWords);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const handleSave = async () => {
     // Filter out empty words (only dots or empty)
     const validWords = words.filter(w => w.word.trim() !== '' && w.word.trim() !== '.');
@@ -78,43 +83,18 @@ export default function DictionaryScreen() {
     router.back();
   };
 
-  const toggleSelectionMode = () => {
-    setSelectionMode(!selectionMode);
-    if (selectionMode) {
-      setSelectedWords(new Set());
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleSelectAll = () => {
-    const validWords = words.filter(w => w.word.trim() !== '');
-    setSelectedWords(new Set(validWords.map(w => w.id)));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleStartTest = () => {
-    if (selectedWords.size === 0) {
+  const handleStartTest = (selectedWordIds: string[]) => {
+    if (selectedWordIds.length === 0) {
       Alert.alert('No Words Selected', 'Please select at least one word to test.');
       return;
     }
     
-    const selectedWordsList = words.filter(w => selectedWords.has(w.id));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectionModalVisible(false);
     router.push({
       pathname: '/(tabs)/(home)/test',
-      params: { dictionaryId: id, wordIds: Array.from(selectedWords).join(',') },
+      params: { dictionaryId: id, wordIds: selectedWordIds.join(',') },
     });
-  };
-
-  const toggleWordSelection = (wordId: string) => {
-    const newSelection = new Set(selectedWords);
-    if (newSelection.has(wordId)) {
-      newSelection.delete(wordId);
-    } else {
-      newSelection.add(wordId);
-    }
-    setSelectedWords(newSelection);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   if (!dictionary) {
@@ -137,11 +117,9 @@ export default function DictionaryScreen() {
           ),
           headerRight: () => (
             <View style={styles.headerRightContainer}>
-              {!selectionMode && (
-                <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-                  <Text style={styles.saveText}>Save</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
+                <Text style={styles.saveText}>Save</Text>
+              </TouchableOpacity>
             </View>
           ),
         }}
@@ -160,53 +138,42 @@ export default function DictionaryScreen() {
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         >
-          {words.map((word) => (
-            <WordRow
+          {words.map((word, index) => (
+            <DraggableWordRow
               key={word.id}
               word={word}
+              index={index}
               onUpdate={handleUpdateWord}
               onDelete={() => handleDeleteWord(word.id)}
+              onReorder={handleReorderWords}
+              allWords={words}
               isOnline={isOnline}
-              selectionMode={selectionMode}
-              isSelected={selectedWords.has(word.id)}
-              onSelect={() => toggleWordSelection(word.id)}
             />
           ))}
+          
+          <TouchableOpacity style={styles.addButton} onPress={handleAddWord}>
+            <IconSymbol name="plus.circle.fill" size={32} color={colors.primary} />
+            <Text style={styles.addButtonText}>Add Word</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         <View style={styles.bottomBar}>
-          {selectionMode ? (
-            <>
-              <TouchableOpacity style={styles.bottomButton} onPress={handleSelectAll}>
-                <IconSymbol name="checkmark.circle.fill" size={24} color={colors.primary} />
-                <Text style={styles.bottomButtonText}>Select All</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.bottomButton} onPress={toggleSelectionMode}>
-                <IconSymbol name="xmark.circle.fill" size={24} color={colors.error} />
-                <Text style={styles.bottomButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.bottomButton, styles.startTestButton]}
-                onPress={handleStartTest}
-              >
-                <IconSymbol name="play.fill" size={24} color="#FFFFFF" />
-                <Text style={styles.startTestButtonText}>Start Test</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity style={styles.bottomButton} onPress={handleAddWord}>
-                <IconSymbol name="plus.circle.fill" size={24} color={colors.primary} />
-                <Text style={styles.bottomButtonText}>Add Word</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.bottomButton} onPress={toggleSelectionMode}>
-                <IconSymbol name="checkmark.circle.fill" size={24} color={colors.accent} />
-                <Text style={styles.bottomButtonText}>Test Mode</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity
+            style={styles.runButton}
+            onPress={() => setSelectionModalVisible(true)}
+          >
+            <IconSymbol name="play.fill" size={24} color="#FFFFFF" />
+            <Text style={styles.runButtonText}>Run Test</Text>
+          </TouchableOpacity>
         </View>
       </View>
+
+      <WordSelectionModal
+        visible={selectionModalVisible}
+        words={words}
+        onClose={() => setSelectionModalVisible(false)}
+        onStartTest={handleStartTest}
+      />
     </>
   );
 }
@@ -221,7 +188,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   errorText: {
     fontSize: 18,
@@ -254,41 +221,48 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 8,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+  },
+  addButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: colors.card,
-    flexDirection: 'row',
     padding: 16,
-    gap: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.1)',
     elevation: 8,
   },
-  bottomButton: {
-    flex: 1,
+  runButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: colors.background,
-    gap: 6,
-  },
-  bottomButtonText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  startTestButton: {
+    padding: 16,
+    borderRadius: 12,
     backgroundColor: colors.primary,
+    gap: 8,
   },
-  startTestButtonText: {
+  runButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
